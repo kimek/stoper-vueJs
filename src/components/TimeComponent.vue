@@ -26,7 +26,6 @@ let display = ref('00:00:00'),
     defaultSeconds = 0,
     isStarted = false,
     isStopped = true,
-    countingUp = ref(true),
     targetTimestamp = 0,
     pausedDifference = 0,
     frameInterval = () => {}
@@ -38,14 +37,9 @@ function start() {
     targetTime = pausedDifference
     pausedDifference = 0
   }
-  if (countingUp.value) targetTimestamp = nowTimestamp - targetTime
-  else targetTimestamp = nowTimestamp + targetTime
+  targetTimestamp = nowTimestamp - targetTime
   frameInterval = () => {
-    if (!countingUp.value && targetTimestamp - Date.now() < 1) {
-      stop()
-      updateDisplay(0)
-      if (defaultSeconds === 0) countingUp.value = true
-    } else updateDisplay()
+    updateDisplay()
     requestAnimationFrame(frameInterval)
   }
   frameInterval()

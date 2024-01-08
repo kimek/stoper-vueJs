@@ -2,11 +2,11 @@
 import { ref } from 'vue'
 import Swal from "sweetalert2";
 const emit = defineEmits(['remove'])
-const props = defineProps(['id', 'time', 'timeStart', 'roundStop', 'roundTime'])
+const props = defineProps(['item'])
 
 let displayTitle = ref('Zmien nazwe rundy')
 function remove() {
-  emit('remove', props.id)
+  emit('remove', props.item.id)
 }
 
 async function rename() {
@@ -23,10 +23,10 @@ async function rename() {
 
 <template>
   <tr>
-    <td>{{props.id ? props.id + 1 : 1}}</td>
+    <td>{{ props.item.id + 1}}</td>
     <td><div v-if='displayTitle'><span @click='rename'>{{ displayTitle }}</span></div></td>
-    <td>{{ props.roundTime ? props.roundTime : props.time }}</td>
-    <td>{{ props.roundStop ? props.roundStop : props.timeStart }}</td>
+    <td>{{ props.item.roundTime }}</td>
+    <td>{{ props.item.roundStop }}</td>
     <td><button type='button' @click='remove'>Remove</button></td>
   </tr>
 

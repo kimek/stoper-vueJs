@@ -1,27 +1,31 @@
 <script setup>
 import Timer from './TimeComponent.vue'
-import Runda from './Runda.vue'
-import {ref} from 'vue'
+import Round from './Round.vue'
+import helper from './timeHelper.js'
+import Swal from "sweetalert2"
+import { ref } from 'vue'
 
-let rundQty = 0,
-  timeStart;
+let roundsQuantity = 0, removedId = 0
 
 const fields = ref([]),
   currentTime = ref(0),
   time = ref(0);
 
 function addRound() {
-  fields.value.push({ id: rundQty++, time:time, roundTime:null, roundStop: null, currentTime:currentTime })
+  fields.value.push({ id: roundsQuantity++, roundTime:null, roundStop: null })
 
-  if(rundQty === 2) {
-    fields._value[rundQty - 2].roundStop = time.value //set first roundStop
-    fields._value[rundQty - 2].roundTime = time.value
+  let prevRound = fields._value[roundsQuantity-2]
+
+  if(roundsQuantity === 2 && prevRound) { //set first roundStop
+    prevRound.roundTime = currentTime.value
+    prevRound.roundStop = currentTime.value
   }
 
-  if(rundQty > 2) {
-    let prevRound = fields._value[rundQty-2]
-    prevRound.roundTime = time.value;
-    prevRound.roundStop = currentTime.value;
+  if(roundsQuantity > 2) {
+    if(prevRound) {
+      prevRound.roundTime = time.value;
+      prevRound.roundStop = currentTime.value;
+    }
   }
 }
 
@@ -30,11 +34,10 @@ function getDifference(time, prev) {
     let previous = new Date('2011/02/07 ' + prev),
       finish = new Date('2011/02/07 ' + time.value),
       diff = Math.abs(finish - previous);
-    return formatTime(timeUnits(diff))
+    return formatTime(helper.methods.timeUnits(diff))
   }
   return false;
 }
-
 
 function formatTime(diffObject) {
   for(const par in diffObject) {
@@ -45,55 +48,50 @@ function formatTime(diffObject) {
   return diffObject['hours'] + ':' + diffObject['minutes'] + ':' + diffObject['seconds'];
 }
 
-// Helper
-function timeUnits( ms ) {
-  if ( !Number.isInteger(ms) ) {
-    return null
-  }
-  /**
-   * Takes as many whole units from the time pool (ms) as possible
-   * @param {int} msUnit - Size of a single unit in milliseconds
-   * @return {int} Number of units taken from the time pool
-   */
-  const allocate = msUnit => {
-    const units = Math.trunc(ms / msUnit)
-    ms -= units * msUnit
-    return units
-  }
-  // Property order is important here.
-  // These arguments are the respective units in ms.
-  return {
-    // weeks: allocate(604800000), // Uncomment for weeks
-    days: allocate(86400000),
-    hours: allocate(3600000),
-    minutes: allocate(60000),
-    seconds: allocate(1000),
-    // ms: ms // remainder
-  }
-}
-
-// End Helpers
 function removeRound(id) {
-  const index = fields.value.findIndex(f => f.id === id)
-  fields.value.splice(index,1)
+  //TODO implement removing rounds
+    Swal.fire('To implement');
+    return
+  // const index = fields.value.findIndex(f => f.id === id)
+  // fields.value.splice(index,1)
+  // removedId++
 }
 
 function removeAll() {
   fields.value = []
-  rundQty = 0;
+  roundsQuantity = 0;
 }
 
 const handleSendMessage = (timerPushNotice, value1, value2) => {
   if(timerPushNotice === 'removeRounds'){
     removeAll()
   }
+  //TODO Dont use fields._value as this is terrible
   if(timerPushNotice === 'time') {
     time.value = value1
-    if(rundQty >= 2) {
-      let prev = fields._value[rundQty-2].roundStop;
-      time.value = getDifference(time, prev )
+
+    if(roundsQuantity >= 2) {
+      let prevRound = fields._value[roundsQuantity-2]
+      if(prevRound) {
+        time.value = getDifference(time, prevRound.roundStop )
+      }
+
     }
     currentTime.value = value1
+
+    if(roundsQuantity > 0) {
+
+      let prevRound = fields._value[roundsQuantity-1]
+
+      if(!prevRound) {
+        prevRound = fields._value[roundsQuantity-removedId-1]
+        console.log('BUG: TODO - Fix Handling IDs in more reactive way');
+      }
+
+      prevRound.roundStop = value1
+      prevRound.roundTime = time.value
+
+    }
   }
 };
 
@@ -102,7 +100,7 @@ const handleSendMessage = (timerPushNotice, value1, value2) => {
   <div class='wrapper'>
     <div>
       <Timer @send-message="handleSendMessage" />
-      <button @click="addRound(time)">Dodaj runde</button>
+      <button @click="addRound()">Dodaj runde</button>
       <table v-if='fields.length'>
         <thead>
           <tr>
@@ -114,12 +112,9 @@ const handleSendMessage = (timerPushNotice, value1, value2) => {
           </tr>
         </thead>
         <tbody>
-          <Runda v-for="field in fields" :id="field.id"
-                 :time="field.time"
-                 :roundStop="field.roundStop"
-                 :timeStart="field.currentTime"
-                 :roundTime="field.roundTime"
-                 @remove='removeRound(field.id)' />
+          <Round v-for="item in fields" :key="item.id"
+                 :item="item"
+                 @remove='removeRound(item.id)' />
         </tbody>
       </table>
     </div>
